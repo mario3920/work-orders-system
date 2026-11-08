@@ -3,8 +3,11 @@ import * as serviceOrdersService from './serviceOrdersServices.js';
 import { createServiceOrderSchema } from './schemas/createServiceOrder.schema.js';
 import { JsonSchemaToTsProvider } from '@fastify/type-provider-json-schema-to-ts';
 import { updateServiceOrderSchema } from './schemas/updateServiceOrder.schema.js';
-import { serviceOrderParamsSchema } from './schemas/serviceOrderParams.schema.js';
-import { listServiceOrdersSchema } from './schemas/listServiceOrders.schema.js';
+import {
+  serviceOrderPaginationSchema,
+  serviceOrderParamsPaginationSchema,
+  serviceOrderParamsSchema,
+} from './schemas/serviceOrderParams.schema.js';
 
 export async function serviceOrdersRoutes(app: FastifyInstance) {
   const server = app.withTypeProvider<JsonSchemaToTsProvider>();
@@ -19,16 +22,26 @@ export async function serviceOrdersRoutes(app: FastifyInstance) {
     },
   );
 
-  server.get('/', { schema: listServiceOrdersSchema }, async () => {
-    return serviceOrdersService.getAllServiceOrders();
+  server.get('/', { schema: serviceOrderPaginationSchema }, async (request) => {
+    const page = request.query.page ?? 1;
+    return serviceOrdersService.getAllServiceOrders(page);
   });
 
   server.get('/:id', { schema: serviceOrderParamsSchema }, async (request) => {
-
     const id = Number(request.params.id);
 
     return serviceOrdersService.getServiceOrderById(id);
   });
+
+  server.get(
+    '/client/:id',
+    { schema: serviceOrderParamsPaginationSchema },
+    async (request) => {
+      const page = request.query.page ?? 1;
+      const id = Number(request.params.id);
+      return serviceOrdersService.getAllServiceOrdersByClient(id, page);
+    },
+  );
 
   server.patch(
     '/:id',

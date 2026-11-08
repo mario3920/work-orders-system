@@ -1,10 +1,11 @@
-import { and, desc, eq, isNull } from 'drizzle-orm';
+import { and, desc, eq, isNull, count } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { serviceOrders } from '../../db/schema.js';
 import type {
   UpdateServiceOrderData,
   ServiceOrderFinalStatus,
 } from './serviceOrders.types.js';
+import { buildPagination, getPagination } from '../../utils/pagination.js';
 
 export async function createServiceOrder(
   data: typeof serviceOrders.$inferInsert,
@@ -14,12 +15,52 @@ export async function createServiceOrder(
   return order;
 }
 
-export async function findAllServiceOrders() {
-  return db
+export async function findAllServiceOrders(page: number) {
+  const { limit, offset } = getPagination(page);
+  const orders = await db
     .select()
     .from(serviceOrders)
     .where(isNull(serviceOrders.deletedAt))
-    .orderBy(desc(serviceOrders.createdAt));
+    .orderBy(desc(serviceOrders.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const paginationCounter = await db
+    .select({ total: count() })
+    .from(serviceOrders)
+    .where(isNull(serviceOrders.deletedAt));
+
+  const total = paginationCounter[0]?.total ?? 0;
+
+  return {
+    orders: orders ?? null,
+    pagination: buildPagination(total, page, limit),
+  };
+}
+
+export async function findAllServiceOrdersByClient(id: number, page: number) {
+  const { limit, offset } = getPagination(page);
+  const orders = await db
+    .select()
+    .from(serviceOrders)
+    .where(and(eq(serviceOrders.clientId, id), isNull(serviceOrders.deletedAt)))
+    .orderBy(desc(serviceOrders.createdAt))
+    .limit(limit)
+    .offset(offset);
+
+  const paginationCounter = await db
+    .select({ total: count() })
+    .from(serviceOrders)
+    .where(
+      and(eq(serviceOrders.clientId, id), isNull(serviceOrders.deletedAt)),
+    );
+
+  const total = paginationCounter[0]?.total ?? 0;
+
+  return {
+    orders: orders ?? null,
+    pagination: buildPagination(total, page, limit),
+  };
 }
 
 export async function findServiceOrderById(id: number) {

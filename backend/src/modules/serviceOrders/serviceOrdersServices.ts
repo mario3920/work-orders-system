@@ -28,8 +28,15 @@ export async function createServiceOrder(data: CreateServiceOrderInput) {
   return serviceOrdersRepository.createServiceOrder(data);
 }
 
-export async function getAllServiceOrders() {
-  return serviceOrdersRepository.findAllServiceOrders();
+export async function getAllServiceOrders(page: number) {
+  return serviceOrdersRepository.findAllServiceOrders(page);
+}
+
+export async function getAllServiceOrdersByClient(
+  clientId: number,
+  page: number,
+) {
+  return serviceOrdersRepository.findAllServiceOrdersByClient(clientId, page);
 }
 
 export async function getServiceOrderById(id: number) {
@@ -92,8 +99,8 @@ export async function processServiceOrder(id: number) {
   }
 
   if (!order) {
-  throw new AppError('Failed to update service order status', 500);
-}
+    throw new AppError('Failed to update service order status', 500);
+  }
 
   return order;
 }
