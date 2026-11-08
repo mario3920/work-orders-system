@@ -10,7 +10,7 @@ services:
     environment:
       NODE_ENV: ${NODE_ENV}
       PORT: 3000
-      DATABASE_URL: ${DB_URL}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     depends_on:
       db:
         condition: service_healthy
@@ -42,10 +42,27 @@ services:
       dockerfile: Dockerfile
       target: migrate
     environment:
-      DATABASE_URL: ${DB_URL}
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
     depends_on:
       db:
         condition: service_healthy
+    restart: "no"
+
+  seed:
+    profiles:
+      - tools
+    build:
+      context: ./backend
+      dockerfile: Dockerfile
+      target: base
+    command: npm run db:seed
+    environment:
+      DATABASE_URL: postgresql://${DB_USER}:${DB_PASSWORD}@${DB_HOST}:${DB_PORT}/${DB_NAME}
+    depends_on:
+      db:
+        condition: service_healthy
+      migrate:
+        condition: service_completed_successfully
     restart: "no"
 
 volumes:
