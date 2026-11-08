@@ -1,13 +1,15 @@
-
-import { and, desc, eq } from 'drizzle-orm';
+import { and, desc, eq, isNull } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { serviceOrders } from '../../db/schema.js';
+import type {
+  UpdateServiceOrderData,
+  ServiceOrderFinalStatus,
+} from './serviceOrders.types.js';
 
-export async function createServiceOrder(data: typeof serviceOrders.$inferInsert) {
-  const [order] = await db
-    .insert(serviceOrders)
-    .values(data)
-    .returning();
+export async function createServiceOrder(
+  data: typeof serviceOrders.$inferInsert,
+) {
+  const [order] = await db.insert(serviceOrders).values(data).returning();
 
   return order;
 }
@@ -16,6 +18,7 @@ export async function findAllServiceOrders() {
   return db
     .select()
     .from(serviceOrders)
+    .where(isNull(serviceOrders.deletedAt))
     .orderBy(desc(serviceOrders.createdAt));
 }
 
@@ -23,7 +26,7 @@ export async function findServiceOrderById(id: number) {
   const [order] = await db
     .select()
     .from(serviceOrders)
-    .where(eq(serviceOrders.id, id))
+    .where(and(eq(serviceOrders.id, id), isNull(serviceOrders.deletedAt)))
     .limit(1);
 
   return order ?? null;
@@ -31,7 +34,7 @@ export async function findServiceOrderById(id: number) {
 
 export async function updateServiceOrder(
   id: number,
-  data: Partial<typeof serviceOrders.$inferInsert>,
+  data: UpdateServiceOrderData,
 ) {
   const [order] = await db
     .update(serviceOrders)
@@ -39,7 +42,35 @@ export async function updateServiceOrder(
       ...data,
       updatedAt: new Date(),
     })
-    .where(eq(serviceOrders.id, id))
+    .where(
+      and(
+        eq(serviceOrders.id, id),
+        eq(serviceOrders.status, 'PENDING'),
+        isNull(serviceOrders.deletedAt),
+      ),
+    )
+    .returning();
+
+  return order ?? null;
+}
+
+export async function updateServiceOrderStatus(
+  id: number,
+  status: ServiceOrderFinalStatus,
+) {
+  const [order] = await db
+    .update(serviceOrders)
+    .set({
+      status,
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(serviceOrders.id, id),
+        eq(serviceOrders.status, 'PROCESSING'),
+        isNull(serviceOrders.deletedAt),
+      ),
+    )
     .returning();
 
   return order ?? null;
@@ -47,8 +78,18 @@ export async function updateServiceOrder(
 
 export async function deleteServiceOrder(id: number) {
   const [order] = await db
-    .delete(serviceOrders)
-    .where(eq(serviceOrders.id, id))
+    .update(serviceOrders)
+    .set({
+      deletedAt: new Date(),
+      updatedAt: new Date(),
+    })
+    .where(
+      and(
+        eq(serviceOrders.id, id),
+        eq(serviceOrders.status, 'PENDING'),
+        isNull(serviceOrders.deletedAt),
+      ),
+    )
     .returning();
 
   return order ?? null;
@@ -65,6 +106,7 @@ export async function startServiceOrderProcessing(id: number) {
       and(
         eq(serviceOrders.id, id),
         eq(serviceOrders.status, 'PENDING'),
+        isNull(serviceOrders.deletedAt),
       ),
     )
     .returning();
@@ -83,6 +125,7 @@ export async function cancelServiceOrder(id: number) {
       and(
         eq(serviceOrders.id, id),
         eq(serviceOrders.status, 'PENDING'),
+        isNull(serviceOrders.deletedAt),
       ),
     )
     .returning();
