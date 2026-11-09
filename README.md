@@ -123,3 +123,9 @@ backend/
 docker-compose.yml
 .env.example
 ```
+
+## Banco de dados
+
+Segue o link com a representação visual do banco de dados, campos e suas relações
+
+https://dbdiagram.io/d/6ae3a08ced134e407e468aad
