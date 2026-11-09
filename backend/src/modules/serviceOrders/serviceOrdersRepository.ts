@@ -1,6 +1,7 @@
 import { and, desc, eq, isNull, count } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import { serviceOrders } from '../../db/schema.js';
+import type { ServiceOrderListQuery } from './schemas/serviceOrderParams.schema.js';
 import type {
   UpdateServiceOrderData,
   ServiceOrderFinalStatus,
@@ -15,52 +16,64 @@ export async function createServiceOrder(
   return order;
 }
 
-export async function findAllServiceOrders(page: number) {
+function getServiceOrderSortColumn(orderBy: ServiceOrderListQuery['orderBy']) {
+  switch (orderBy) {
+    case 'updatedAt':
+      return serviceOrders.updatedAt;
+    case 'priority':
+      return serviceOrders.priority;
+    case 'status':
+      return serviceOrders.status;
+    case 'createdAt':
+    default:
+      return serviceOrders.createdAt;
+  }
+}
+
+async function findServiceOrders(
+  filters: ServiceOrderListQuery,
+  clientId?: number,
+) {
+  const page = filters.page ?? 1;
   const { limit, offset } = getPagination(page);
+  const whereConditions = and(
+    isNull(serviceOrders.deletedAt),
+    clientId !== undefined ? eq(serviceOrders.clientId, clientId) : undefined,
+    filters.status ? eq(serviceOrders.status, filters.status) : undefined,
+    filters.priority ? eq(serviceOrders.priority, filters.priority) : undefined,
+  );
+  const sortColumn = getServiceOrderSortColumn(filters.orderBy);
+
   const orders = await db
     .select()
     .from(serviceOrders)
-    .where(isNull(serviceOrders.deletedAt))
-    .orderBy(desc(serviceOrders.createdAt))
+    .where(whereConditions)
+    .orderBy(desc(sortColumn))
     .limit(limit)
     .offset(offset);
 
   const paginationCounter = await db
     .select({ total: count() })
     .from(serviceOrders)
-    .where(isNull(serviceOrders.deletedAt));
+    .where(whereConditions);
 
   const total = paginationCounter[0]?.total ?? 0;
 
   return {
-    orders: orders ?? null,
+    orders,
     pagination: buildPagination(total, page, limit),
   };
 }
 
-export async function findAllServiceOrdersByClient(id: number, page: number) {
-  const { limit, offset } = getPagination(page);
-  const orders = await db
-    .select()
-    .from(serviceOrders)
-    .where(and(eq(serviceOrders.clientId, id), isNull(serviceOrders.deletedAt)))
-    .orderBy(desc(serviceOrders.createdAt))
-    .limit(limit)
-    .offset(offset);
+export async function findAllServiceOrders(filters: ServiceOrderListQuery) {
+  return findServiceOrders(filters);
+}
 
-  const paginationCounter = await db
-    .select({ total: count() })
-    .from(serviceOrders)
-    .where(
-      and(eq(serviceOrders.clientId, id), isNull(serviceOrders.deletedAt)),
-    );
-
-  const total = paginationCounter[0]?.total ?? 0;
-
-  return {
-    orders: orders ?? null,
-    pagination: buildPagination(total, page, limit),
-  };
+export async function findAllServiceOrdersByClient(
+  id: number,
+  filters: ServiceOrderListQuery,
+) {
+  return findServiceOrders(filters, id);
 }
 
 export async function findServiceOrderById(id: number) {

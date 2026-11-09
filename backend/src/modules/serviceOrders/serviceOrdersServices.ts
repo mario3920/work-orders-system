@@ -4,6 +4,7 @@ import * as clientsRepository from '../clients/clientsRepository.js';
 import * as employeeRepository from '../employees/employeesRepository.js';
 import type { CreateServiceOrderInput } from './schemas/createServiceOrder.schema.js';
 import type { UpdateServiceOrderInput } from './schemas/updateServiceOrder.schema.js';
+import type { ServiceOrderListQuery } from './schemas/serviceOrderParams.schema.js';
 
 export async function createServiceOrder(data: CreateServiceOrderInput) {
   const client = await clientsRepository.findClientWithUserById(data.clientId);
@@ -28,15 +29,18 @@ export async function createServiceOrder(data: CreateServiceOrderInput) {
   return serviceOrdersRepository.createServiceOrder(data);
 }
 
-export async function getAllServiceOrders(page: number) {
-  return serviceOrdersRepository.findAllServiceOrders(page);
+export async function getAllServiceOrders(filters: ServiceOrderListQuery) {
+  return serviceOrdersRepository.findAllServiceOrders(filters);
 }
 
 export async function getAllServiceOrdersByClient(
   clientId: number,
-  page: number,
+  filters: ServiceOrderListQuery,
 ) {
-  return serviceOrdersRepository.findAllServiceOrdersByClient(clientId, page);
+  return serviceOrdersRepository.findAllServiceOrdersByClient(
+    clientId,
+    filters,
+  );
 }
 
 export async function getServiceOrderById(id: number) {

@@ -23,8 +23,7 @@ export async function serviceOrdersRoutes(app: FastifyInstance) {
   );
 
   server.get('/', { schema: serviceOrderPaginationSchema }, async (request) => {
-    const page = request.query.page ?? 1;
-    return serviceOrdersService.getAllServiceOrders(page);
+    return serviceOrdersService.getAllServiceOrders(request.query);
   });
 
   server.get('/:id', { schema: serviceOrderParamsSchema }, async (request) => {
@@ -37,9 +36,11 @@ export async function serviceOrdersRoutes(app: FastifyInstance) {
     '/client/:id',
     { schema: serviceOrderParamsPaginationSchema },
     async (request) => {
-      const page = request.query.page ?? 1;
       const id = Number(request.params.id);
-      return serviceOrdersService.getAllServiceOrdersByClient(id, page);
+      return serviceOrdersService.getAllServiceOrdersByClient(
+        id,
+        request.query,
+      );
     },
   );
 
