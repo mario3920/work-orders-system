@@ -119,6 +119,9 @@ export const serviceOrders = pgTable(
     status: serviceOrderStatusEnum('status').default('PENDING').notNull(),
     responsibleId: integer('responsible_id').references(() => employees.id),
     ...timestamps,
+    deletedAt: timestamp('deleted_at', {
+      withTimezone: true,
+    }),
   },
   (table) => [
     index('service_orders_client_id_idx').on(table.clientId),
