@@ -52,12 +52,12 @@ async function findServiceOrders(
     .limit(limit)
     .offset(offset);
 
-  const paginationCounter = await db
+  const [paginationCounter] = await db
     .select({ total: count() })
     .from(serviceOrders)
     .where(whereConditions);
 
-  const total = paginationCounter[0]?.total ?? 0;
+  const total = paginationCounter?.total ?? 0;
 
   return {
     orders,
