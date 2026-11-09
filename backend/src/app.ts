@@ -11,6 +11,11 @@ export function buildApp() {
     logger: {
       level: process.env.LOG_LEVEL ?? 'info',
     },
+    ajv: {
+      customOptions: {
+        removeAdditional: false,
+      },
+    },
   });
 
   app.addHook('onClose', async () => {

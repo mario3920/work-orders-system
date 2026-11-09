@@ -1,6 +1,7 @@
 import { randomBytes, scrypt } from 'node:crypto';
 import * as usersRepository from './usersRepository.js';
 import { AppError } from '../../errors/AppError.js';
+import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
 import type { CreateUserInput } from './schemas/createUser.schema.js';
 import type { UpdateUserInput } from './schemas/updateUser.schema.js';
 
@@ -17,15 +18,6 @@ function hashPassword(password: string): Promise<string> {
       resolve(`scrypt$${salt}$${derivedKey.toString('hex')}`);
     });
   });
-}
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === '23505'
-  );
 }
 
 function throwEmailConflict(error: unknown): never {

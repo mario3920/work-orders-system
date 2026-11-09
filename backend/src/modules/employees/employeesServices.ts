@@ -1,16 +1,8 @@
 import * as employeesRepository from './employeesRepository.js';
 import { AppError } from '../../errors/AppError.js';
+import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
 import type { CreateEmployeeInput } from './schemas/createEmployee.schema.js';
 import type { UpdateEmployeeInput } from './schemas/updateEmployee.schema.js';
-
-function isUniqueConstraintError(error: unknown): boolean {
-  return (
-    typeof error === 'object' &&
-    error !== null &&
-    'code' in error &&
-    error.code === '23505'
-  );
-}
 
 export async function createEmployee(data: CreateEmployeeInput) {
   const user = await employeesRepository.findUserForEmployeeCreation(
