@@ -3,7 +3,7 @@ import { AppError } from '../../errors/AppError.js';
 import type { CreateUserInput } from './schemas/createUser.schema.js';
 import type { UpdateUserInput } from './schemas/updateUser.schema.js';
 import { hashPassword } from '../../auth/password.js';
-import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
+import { isUniqueConstraintError } from '../../db/databaseErrors.js';
 import { db } from '../../db/connection.js';
 import * as clientsRepository from '../clients/clientsRepository.js';
 import * as employeesRepository from '../employees/employeesRepository.js';
