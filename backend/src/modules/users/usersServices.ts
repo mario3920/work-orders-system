@@ -1,24 +1,12 @@
-import { randomBytes, scrypt } from 'node:crypto';
 import * as usersRepository from './usersRepository.js';
 import { AppError } from '../../errors/AppError.js';
-import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
 import type { CreateUserInput } from './schemas/createUser.schema.js';
 import type { UpdateUserInput } from './schemas/updateUser.schema.js';
-
-function hashPassword(password: string): Promise<string> {
-  const salt = randomBytes(16).toString('hex');
-
-  return new Promise((resolve, reject) => {
-    scrypt(password, salt, 64, (error, derivedKey) => {
-      if (error) {
-        reject(error);
-        return;
-      }
-
-      resolve(`scrypt$${salt}$${derivedKey.toString('hex')}`);
-    });
-  });
-}
+import { hashPassword } from '../../auth/password.js';
+import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
+import { db } from '../../db/connection.js';
+import * as clientsRepository from '../clients/clientsRepository.js';
+import * as employeesRepository from '../employees/employeesRepository.js';
 
 function throwEmailConflict(error: unknown): never {
   if (isUniqueConstraintError(error)) {
@@ -39,12 +27,39 @@ export async function createUser(data: CreateUserInput) {
   const passwordHash = await hashPassword(data.password);
 
   try {
-    return await usersRepository.createUser({
-      email,
-      passwordHash,
-      role: data.role,
+    return await db.transaction(async (tx) => {
+      const user = await usersRepository.createUser(tx, {
+        email,
+        passwordHash,
+        role: data.role,
+      });
+
+      if (!user) {
+        throw new Error('User insert returned no row');
+      }
+
+      if (data.role === 'CLIENT') {
+        await clientsRepository.createClient(tx, {
+          userId: user.id,
+          name: data.name,
+          phone: data.phone,
+        });
+      } else if (data.role === 'EMPLOYEE') {
+        await employeesRepository.createEmployee(tx, {
+          userId: user.id,
+          name: data.name,
+          phone: data.phone,
+          employeeCode: data.employeeCode,
+          hiredAt: new Date(data.hiredAt),
+        });
+      }
+
+      return user;
     });
   } catch (error) {
+    if (isUniqueConstraintError(error) && data.role === 'EMPLOYEE') {
+      throw new AppError('Email or employee code is already in use', 409);
+    }
     throwEmailConflict(error);
   }
 }

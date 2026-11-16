@@ -9,3 +9,7 @@ export const pool = new Pool({
 });
 
 export const db = drizzle(pool);
+
+export type DatabaseTransaction = Parameters<
+  Parameters<typeof db.transaction>[0]
+>[0];

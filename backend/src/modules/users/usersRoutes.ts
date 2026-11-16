@@ -43,7 +43,7 @@ export async function usersRoutes(app: FastifyInstance) {
 
       await usersService.deactivateUser(id);
 
-      return reply.status(204).send();
+      return reply.status(200).send();
     },
   );
 }

@@ -1,3 +1,4 @@
+import argon2 from 'argon2';
 import { db, pool } from './connection.js';
 import { clients, employees, serviceOrders, users } from './schema.js';
 
@@ -22,6 +23,10 @@ function getServiceOrderStatus(index: number) {
 
 async function seed() {
   try {
+    const passwordHash = await argon2.hash(SEED_PASSWORD, {
+      type: argon2.argon2id,
+    });
+
     await db.transaction(async (tx) => {
       const userData = Array.from(
         { length: CLIENT_COUNT + EMPLOYEE_COUNT },
@@ -34,7 +39,7 @@ async function seed() {
             email: isClient
               ? `seed.client${number}@example.com`
               : `seed.employee${number}@example.com`,
-            passwordHash: SEED_PASSWORD,
+            passwordHash,
             role: isClient ? ('CLIENT' as const) : ('EMPLOYEE' as const),
             active: profileIndex % 7 !== 0,
             createdAt: daysAgo(100 - profileIndex),
