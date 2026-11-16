@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm';
-import { db } from '../../db/connection.js';
+import { db, type DatabaseTransaction } from '../../db/connection.js';
 import { employees, users } from '../../db/schema.js';
 import { buildPagination, getPagination } from '../../utils/pagination.js';
 import type { UpdateEmployeeInput } from './schemas/updateEmployee.schema.js';
@@ -56,22 +56,14 @@ export async function findEmployeeWithUserById(id: number) {
   return employee ?? null;
 }
 
-export async function findUserForEmployeeCreation(userId: number) {
-  const [user] = await db
-    .select({
-      id: users.id,
-      role: users.role,
-      active: users.active,
-    })
-    .from(users)
-    .where(eq(users.id, userId))
-    .limit(1);
-
-  return user ?? null;
-}
-
-export async function createEmployee(data: typeof employees.$inferInsert) {
-  const [employee] = await db.insert(employees).values(data).returning();
+export async function createEmployee(
+  tx: DatabaseTransaction,
+  data: Pick<
+    typeof employees.$inferInsert,
+    'userId' | 'name' | 'phone' | 'employeeCode' | 'hiredAt'
+  >,
+) {
+  const [employee] = await tx.insert(employees).values(data).returning();
 
   return employee;
 }

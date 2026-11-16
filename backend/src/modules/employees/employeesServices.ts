@@ -1,40 +1,6 @@
 import * as employeesRepository from './employeesRepository.js';
 import { AppError } from '../../errors/AppError.js';
-import { isUniqueConstraintError } from '../../utils/databaseErrors.js';
-import type { CreateEmployeeInput } from './schemas/createEmployee.schema.js';
 import type { UpdateEmployeeInput } from './schemas/updateEmployee.schema.js';
-
-export async function createEmployee(data: CreateEmployeeInput) {
-  const user = await employeesRepository.findUserForEmployeeCreation(
-    data.userId,
-  );
-
-  if (!user) {
-    throw new AppError('User not found', 404);
-  }
-  if (user.role !== 'EMPLOYEE') {
-    throw new AppError('User must have the EMPLOYEE role', 409);
-  }
-  if (!user.active) {
-    throw new AppError('User is inactive', 409);
-  }
-
-  try {
-    return await employeesRepository.createEmployee({
-      ...data,
-      hiredAt: new Date(data.hiredAt),
-    });
-  } catch (error) {
-    if (isUniqueConstraintError(error)) {
-      throw new AppError(
-        'An employee already exists for this user or employee code',
-        409,
-      );
-    }
-
-    throw error;
-  }
-}
 
 export async function getAllEmployees(page: number) {
   return employeesRepository.findAllEmployees(page);
