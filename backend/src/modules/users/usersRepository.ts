@@ -1,5 +1,6 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
+import type { DatabaseTransaction } from '../../db/connection.js';
 import { users } from '../../db/schema.js';
 import { buildPagination, getPagination } from '../../utils/pagination.js';
 
@@ -51,9 +52,10 @@ export async function findUserByEmail(email: string) {
 }
 
 export async function createUser(
+  tx: DatabaseTransaction,
   data: Pick<typeof users.$inferInsert, 'email' | 'passwordHash' | 'role'>,
 ) {
-  const [user] = await db
+  const [user] = await tx
     .insert(users)
     .values(data)
     .returning(publicUserFields);

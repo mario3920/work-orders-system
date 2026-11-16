@@ -20,7 +20,7 @@ export const updateUserSchema = {
       email: {
         type: 'string',
         format: 'email',
-        minLength: 3,
+         minLength: 3,
         maxLength: 255,
       },
       password: {
