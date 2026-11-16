@@ -1,7 +1,7 @@
 import { count, desc, eq } from 'drizzle-orm';
 import { db } from '../../db/connection.js';
 import type { DatabaseTransaction } from '../../db/connection.js';
-import { users } from '../../db/schema.js';
+import { clients, employees, users } from '../../db/schema.js';
 import { buildPagination, getPagination } from '../../utils/pagination.js';
 
 const publicUserFields = {
@@ -45,6 +45,26 @@ export async function findUserByEmail(email: string) {
   const [user] = await db
     .select({ id: users.id })
     .from(users)
+    .where(eq(users.email, email))
+    .limit(1);
+
+  return user ?? null;
+}
+
+export async function findUserForLogin(email: string) {
+  const [user] = await db
+    .select({
+      id: users.id,
+      email: users.email,
+      passwordHash: users.passwordHash,
+      role: users.role,
+      active: users.active,
+      clientId: clients.id,
+      employeeId: employees.id,
+    })
+    .from(users)
+    .leftJoin(clients, eq(clients.userId, users.id))
+    .leftJoin(employees, eq(employees.userId, users.id))
     .where(eq(users.email, email))
     .limit(1);
 
