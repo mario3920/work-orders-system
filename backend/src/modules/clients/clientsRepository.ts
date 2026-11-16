@@ -1,5 +1,5 @@
 import { count, desc, eq } from 'drizzle-orm';
-import { db } from '../../db/connection.js';
+import { db, type DatabaseTransaction } from '../../db/connection.js';
 import { clients, users } from '../../db/schema.js';
 import { buildPagination, getPagination } from '../../utils/pagination.js';
 import type { UpdateClientInput } from './schemas/updateClient.schema.js';
@@ -50,6 +50,15 @@ export async function findClientWithUserById(id: number) {
     .limit(1);
 
   return client ?? null;
+}
+
+export async function createClient(
+  tx: DatabaseTransaction,
+  data: Pick<typeof clients.$inferInsert, 'userId' | 'name' | 'phone'>,
+) {
+  const [client] = await tx.insert(clients).values(data).returning();
+
+  return client;
 }
 
 export async function updateClient(id: number, data: UpdateClientInput) {
