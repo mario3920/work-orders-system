@@ -60,12 +60,12 @@ docker compose --profile tools run --rm seed
 
 O seed cria:
 
-- 100 usuários: 50 com papel `CLIENT` e 50 com papel `EMPLOYEE`;
+- 101 usuários: 50 com papel `CLIENT`, 50 com papel `EMPLOYEE` e 1 com papel `ADMIN`;
 - 50 clientes e 50 funcionários, cada perfil ligado ao seu usuário;
 - 50 ordens de serviço, distribuídas entre os status e prioridades disponíveis;
 - duas ordens pendentes excluídas logicamente, para testar esse comportamento.
 
-Os usuários do seed recebem o valor `seed-only-placeholder` no campo de senha. São dados de teste e não representam senhas válidas para autenticação.
+Para testar o login administrativo, use `admin@admin.com` com a senha `admin`. Os usuários de teste de cliente e funcionário usam a senha `password`; alguns são inativos e não podem fazer login.
 
 O seed usa emails fixos, como `seed.client01@example.com`. Por isso, execute-o apenas uma vez em um banco vazio. Uma segunda execução encontrará conflitos de unicidade. O script não apaga nem limpa dados existentes.
 

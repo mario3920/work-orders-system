@@ -5,7 +5,7 @@ import { clients, employees, serviceOrders, users } from './schema.js';
 const CLIENT_COUNT = 50;
 const EMPLOYEE_COUNT = 50;
 const SERVICE_ORDER_COUNT = 50;
-const SEED_PASSWORD = 'seed-only-placeholder';
+const SEED_PASSWORD = 'password';
 
 function daysAgo(days: number): Date {
   const date = new Date();
@@ -24,6 +24,9 @@ function getServiceOrderStatus(index: number) {
 async function seed() {
   try {
     const passwordHash = await argon2.hash(SEED_PASSWORD, {
+      type: argon2.argon2id,
+    });
+    const adminPasswordHash = await argon2.hash('admin', {
       type: argon2.argon2id,
     });
 
@@ -50,7 +53,14 @@ async function seed() {
 
       const insertedUsers = await tx
         .insert(users)
-        .values(userData)
+        .values([
+          ...userData,
+          {
+            email: 'admin@admin.com',
+            passwordHash: adminPasswordHash,
+            role: 'ADMIN' as const,
+          },
+        ])
         .returning({ id: users.id, role: users.role });
 
       const clientUsers = insertedUsers.filter((user) => user.role === 'CLIENT');
@@ -128,12 +138,15 @@ async function seed() {
       await tx.insert(serviceOrders).values(serviceOrderData);
 
       console.log('Seed concluido:');
-      console.log(`- Users: ${insertedUsers.length} (50 CLIENT, 50 EMPLOYEE)`);
+      console.log(
+        `- Users: ${insertedUsers.length} (50 CLIENT, 50 EMPLOYEE, 1 ADMIN)`,
+      );
       console.log(`- Clients: ${insertedClients.length}`);
       console.log(`- Employees: ${insertedEmployees.length}`);
       console.log(`- Service orders: ${serviceOrderData.length}`);
       console.log('- Status das ordens: 30 PENDING, 5 de cada outro status');
-      console.log('- Password placeholder: seed-only-placeholder');
+      console.log('- Senha das contas CLIENT/EMPLOYEE: password');
+      console.log('- Admin de teste: admin@admin.com / admin');
     });
   } catch (error) {
     console.error('Erro ao executar seed:', error);
